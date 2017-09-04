@@ -1,0 +1,132 @@
+import pygame, random
+from pygame.locals import *
+
+pygame.init()
+
+# Constants
+score =0
+blue = (153,153,255)
+moveX = 0
+display_width = 800
+display_height = 800
+rockety = 500
+rocketx = 0
+pygame.display.set_caption('Missile Madness')
+crashed = False
+
+# Displays/Images
+gameDisplay = pygame.display.set_mode((display_width,display_height))
+bullet_list= pygame.sprite.Group()
+ufo_list = pygame.sprite.Group()
+score_sound = pygame.mixer.Sound("sound/scoresound.wav")
+shooting_sound = pygame.mixer.Sound("sound/shooting_sound.wav")
+
+clock = pygame.time.Clock()
+
+# Enemy Class
+class Enemy(pygame.sprite.Sprite):
+      def __init__(self, x ,speed):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load("img/ufo.png")
+        self.rect = self.image.get_rect()
+        self.rect.left = x
+
+# Bullet Class
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load("img/bullets.png")
+        self.rect = self.image.get_rect()
+
+# Rocket Class
+class Rocket(pygame.sprite.Sprite):
+     def __init__(self, x, y, speed):
+         self.image = pygame.image.load("img/rocket.png")
+         pygame.sprite.Sprite.__init__(self)
+         self.rect = self.image.get_rect()
+         self.rect.left = x
+         self.rect.bottom = y
+
+
+
+ROCKET = Rocket(0,600,3)
+time_elapsed = 0
+
+while not crashed:
+    dt = clock.tick()
+    time_elapsed += dt
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            crashed = True
+
+        if (event.type == pygame.KEYDOWN):
+            if (event.key == K_RIGHT):
+                if(ROCKET.rect.right <= 800):
+                    moveX = 3
+            if (event.key == K_LEFT):
+                if(ROCKET.rect.left >= 0):
+                    moveX = -3
+            if event.key == K_SPACE:
+                shooting_sound.play()
+                BULLET = Bullet()
+                BULLET.rect.left = ROCKET.rect.left
+                BULLET.rect.bottom = ROCKET.rect.bottom-85
+                bullet_list.add(BULLET)
+            # Add the bullet to the lists
+
+        if (event.type == pygame.KEYUP):
+            moveX = 0
+        if time_elapsed > 50:
+           UFO = Enemy(random.randint(0,700),1)
+           ufo_list.add(UFO)
+           time_elapsed = 0
+
+    for UFO in ufo_list:
+       if UFO.rect.bottom < 598:
+            UFO.rect.bottom += 1
+
+    for BULLET in bullet_list:
+        if BULLET.rect.top >= 0:
+            BULLET.rect.bottom -=1
+        else:
+            bullet_list.remove(BULLET)
+
+    ROCKET.rect .clamp_ip(gameDisplay.get_rect())
+    ROCKET.rect.left += moveX
+    gameDisplay.fill(blue)
+    gameDisplay.blit(ROCKET.image, ROCKET.rect)
+
+
+    for UFO in ufo_list:
+        gameDisplay.blit(UFO.image,UFO.rect)
+        if (UFO.rect.bottom >= 590):
+            font = pygame.font.Font(None, 56)
+            text = font.render('GAME OVER', 1, (255, 0, 0))
+            textpos = text.get_rect(centerx= gameDisplay.get_width()/2)
+            gameDisplay.fill(blue)
+            gameDisplay.blit(text, textpos)
+
+    for BULLET in bullet_list:
+        gameDisplay.blit(BULLET.image, BULLET.rect)
+    # pygame.key.set_repeat(500, 30)
+
+    for BULLET in bullet_list:
+        hit_list = pygame.sprite.spritecollide(BULLET, ufo_list, True)
+        for UFO in hit_list:
+            ufo_list.remove(UFO)
+            score_sound.play()
+            score += 1
+
+    font = pygame.font.Font(None, 48)
+    text = font.render('score: %d' % score, 1, (10, 10, 10))
+    textpos = text.get_rect(centerx= gameDisplay.get_width()-100)
+    gameDisplay.blit(text, textpos)
+
+    clock.tick(100)
+    pygame.display.flip()
+
+pygame.quit()
+quit()
+
+
+
